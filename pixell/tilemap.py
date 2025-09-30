@@ -453,8 +453,11 @@ def redistribute(imap, comm, active=None, omap=None):
 	# 3. Figure out who I should send and receive each of my tiles to/from
 	omask     = oactive_all[:,imap.active] # [ntasks,iactive]
 	imask     = iactive_all[:,omap.active] # [ntasks,oactive]
+	print('rank: {} | omap.active: {}'.format(comm.rank, omap.active), flush=True)
 	isizes    = imap.geometry.npixs[imap.active] * np.prod(imap.pre).astype(int)
 	osizes    = omap.geometry.npixs[omap.active] * np.prod(omap.pre).astype(int)
+	print('rank: {} | omap.geometry.npixs[omap.active]: {}'.format(comm.rank, omap.geometry.npixs[omap.active]), flush=True)
+	print('rank: {} | omap.pre: {}'.format(comm.rank, omap.pre), flush=True)
 	ioffs     = utils.cumsum(isizes)
 	ooffs     = utils.cumsum(osizes)
 	# 4. Build our alltoallv send info
@@ -464,10 +467,18 @@ def redistribute(imap, comm, active=None, omap=None):
 	send_buf  = [iflat[ioffs[iact]:ioffs[iact]+isizes[iact]] for rank, iact in np.argwhere(omask)]
 	send_buf  = np.concatenate(send_buf, dtype=iflat.dtype) if len(send_buf) > 0 else np.zeros(0, iflat.dtype)
 	# 5. Build the alltoallv receive info
+	print('rank: {} | imask: {}'.format(comm.rank, imask), flush=True)
+	print('rank: {} | osizes: {}'.format(comm.rank, osizes), flush=True)
 	recv_sizes= np.sum(imask*osizes,1)
 	recv_offs = utils.cumsum(recv_sizes)
 	recv_buf  = np.zeros(np.sum(recv_sizes), omap.dtype)
 	# 6. Perform the actual communication
+	print('rank: {} | send_buf: {}'.format(comm.rank, send_buf), flush=True)
+	print('rank: {} | send_sizes: {}'.format(comm.rank, send_sizes), flush=True)
+	print('rank: {} | send_offs: {}'.format(comm.rank, send_offs), flush=True)
+	print('rank: {} | recv_buf: {}'.format(comm.rank, recv_buf), flush=True)
+	print('rank: {} | recv_sizes: {}'.format(comm.rank, recv_sizes), flush=True)
+	print('rank: {} | recv_offs: {}'.format(comm.rank, recv_offs), flush=True)
 	comm.Alltoallv((send_buf, (send_sizes, send_offs)), (recv_buf, (recv_sizes, recv_offs)))
 	del iflat, send_buf
 	# 7. Copy and reduce into flattened output tiles
